@@ -12,4 +12,7 @@ router.get('/:id', orderController.getOrderDetails);
 router.get('/admin/all', authMiddleware.isAdmin, orderController.getAllOrders);
 router.put('/admin/:id/status', authMiddleware.isAdmin, orderController.updateOrderStatus);
 
+
+router.put('/admin/:id/approve', authMiddleware.isAdmin, orderController.approveOrder);
+
 module.exports = router;

@@ -116,3 +116,39 @@ exports.getAllOrders = async (req, res) => {
     res.status(500).json({ message: 'Erro ao buscar pedidos', error: error.message });
   }
 };
+
+exports.approveOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate('itens.produto'); 
+    if (!order) {
+      return res.status(404).json({ message: 'Pedido não encontrado' });
+    }
+
+    if (order.status !== 'pendente') {
+      return res.status(400).json({ message: 'Apenas pedidos pendentes podem ser aprovados' });
+    }
+
+    const { paymentConfirmed } = req.body;
+    if (!paymentConfirmed) {
+      return res.status(400).json({ message: 'Pagamento não confirmado' });
+    }
+
+    for (const item of order.itens) {
+      if (item.produto.estoque < item.quantidade) {
+        return res.status(400).json({ message: `Estoque insuficiente para ${item.produto.nome}` });
+      }
+    }
+
+    for (const item of order.itens) {
+      const product = await Product.findById(item.produto._id);
+      product.estoque -= item.quantidade;
+      await product.save();
+    }
+
+    order.status = 'pago';
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao aprovar pedido', error: error.message });
+  }
+};
